@@ -4,22 +4,33 @@ include $(CURDIR)/.env
 
 wget := wget -q -O - --header "AS-Key: $(AS_KEY)"
 
-iwwc-custom.json: iwwc-info.json
-	$(wget) 'https://api.agent-stats.com/groups/$(AS_GROUP_ID)/custom' > ".tmp.$@"
+CUSTOM := 0
+
+iwwc-now-%.json iwwc-custom-%.json iwwc-info-%.json refresh-% fetch-%: YEAR=$*
+fetch-%: CUSTOM=1
+
+iwwc-custom-%.json: iwwc-info-%.json
+	$(wget) 'https://api.agent-stats.com/groups/$(AS_GROUP_ID_$(YEAR))/custom' > ".tmp.$@"
 	mv ".tmp.$@" "$@"
 
-iwwc-info.json:
-	$(wget) 'https://api.agent-stats.com/groups/$(AS_GROUP_ID)/info' > ".tmp.$@"
+iwwc-now-%.json: iwwc-info-%.json
+	$(wget) 'https://api.agent-stats.com/groups/$(AS_GROUP_ID_$(YEAR))/now' > ".tmp.$@"
+	mv ".tmp.$@" "$@"
+
+iwwc-info-%.json:
+	$(wget) 'https://api.agent-stats.com/groups/$(AS_GROUP_ID_$(YEAR))/info' > ".tmp.$@"
 	if ! [ -e "$@" ] || ! cmp -s "$@" ".tmp.$@"; then mv ".tmp.$@" "$@"; fi
 
-check:
-	$(MAKE) -s -B iwwc-info.json
-	$(MAKE) -s iwwc-custom.json
-	git add iwwc-info.json iwwc-custom.json
-	git diff-index --quiet HEAD iwwc-info.json iwwc-custom.json || git commit --quiet -m 'Auto-commit.'
-	git push --quiet
+fetch-%:
+	$(MAKE) -s -B iwwc-info-$*.json
+	if [ $(CUSTOM) -eq 1 ]; then $(MAKE) -s iwwc-custom-$*.json; fi
+	$(MAKE) -s iwwc-now-$*.json
+	git add iwwc-*-$*.json
+	git diff-index --quiet HEAD iwwc-*-$*.json || git commit --quiet -m 'Auto-commit($(YEAR)).'
+	#git push --quiet
 
-refresh:
-	$(wget) -O /dev/null --method post 'https://api.agent-stats.com/groups/$(AS_GROUP_ID)/refresh'
+refresh-%:
+	echo "YEAR=$(YEAR)"
+	$(wget) -O /dev/null --method post 'https://api.agent-stats.com/groups/$(AS_GROUP_ID_$(YEAR))/refresh'
 
 .PHONY: refresh
