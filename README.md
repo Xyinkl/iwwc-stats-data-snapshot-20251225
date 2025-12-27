@@ -1,4 +1,4 @@
-<img width="946" height="210" alt="image" src="https://github.com/user-attachments/assets/2399f477-442b-44cf-a2f8-85ece9b16a88" /># IWWC 数据分析工具集
+# IWWC 数据分析工具集
 
 本仓库拟提供一套工具来分析 IWWC (Ingress World Wide Competition) 的数据快照，用于检测和分析玩家数据的异常变化。
 
